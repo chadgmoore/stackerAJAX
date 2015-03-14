@@ -6,6 +6,14 @@ $(document).ready( function() {
 		var tags = $(this).find("input[name='tags']").val();
 		getUnanswered(tags);
 	});
+
+	$('.inspiration-getter').submit( function(event){
+		// zero out the results if previous search has run
+		$('.results').html('');
+		//get the value of the tag the user submitted
+		var iTags = $(this).find("input[name='answerers']").val();
+		getTopAnswerers(iTags);
+	})
 });
 
 // this function takes the question object returned by StackOverflow 
@@ -40,6 +48,17 @@ var showQuestion = function(question) {
 
 	return result;
 };
+
+var showAnswerers = function(answerers) {
+	var TAresult = $('.templates .TAresult').clone();
+
+	var answerersElem = TAresult.find('.tag-text a');
+	answerersElem.attr('href', answerers.link);
+	answerersElem.text(answerers.title);
+
+	return TAresult;
+};
+
 
 
 // this function takes the results object from StackOverflow
@@ -88,5 +107,31 @@ var getUnanswered = function(tags) {
 	});
 };
 
+// takes a string to be searched for on StackOverflow, results are top answerers for that tag - search term
+var getTopAnswerers = function(iTags) {
+	// the parameters we need to pass in our request to StackOverflow's API
+	var TArequest = {tagged: iTags,
+								site: 'stackoverflow',
+								order: 'desc',
+								sort: 'creation'};
+	var TAresult = $.ajax({
+		url: ("http://api.stackexchange.com/2.2/tags/" + iTags + "/top-answerers/all_time/"),
+		data: TArequest,
+		dataType: "jsonp",
+		type: "GET",
+		})
+	.done(function(TAresult){
+		var TAsearchResults = showSearchResults(TArequest.tagged, TAresult.items.length);
 
+		$('.search-results').html(TAsearchResults);
 
+		$.each(TAresult.items, function(i, item) {
+			var answerers = showAnswerers(item);
+			$('.results').append(answerers);
+		});
+	})
+	.fail(function(jqXHR, error, errorThrown){
+		var errorElem = showError(error);
+		$('.search-results').append(errorElem);
+	});
+};
