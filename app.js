@@ -8,11 +8,9 @@ $(document).ready( function() {
 	});
 
 	$('.inspiration-getter').submit( function(event){
-		// zero out the results if previous search has run
 		$('.results').html('');
-		//get the value of the tag the user submitted
-		var iTags = $(this).find("input[name='answerers']").val();
-		getTopAnswerers(iTags);
+		var tag = $(this).find("input[name='answerers']").val();
+		getInspiration(tag);
 	})
 });
 
@@ -49,17 +47,18 @@ var showQuestion = function(question) {
 	return result;
 };
 
-var showAnswerers = function(answerers) {
-	var TAresult = $('.templates .TAresult').clone();
+var showInspiration = function(item){
+	var result = $('.templates .inspiration').clone();
+	var user = result.find('.user a')
+		.attr('href', item.user.link)
+		.text(item.user.display_name);
+	var image = "<img src=" + item.user.profile_image + "' alt=" + item.user.display_name + "'>";	
+	$(user).append(image);
+	result.find('.post-count').text(item.post_count);
+	result.find('.score').text(item.score);
 
-	var answerersElem = TAresult.find('.tag-text a');
-	answerersElem.attr('href', answerers.link);
-	answerersElem.text(answerers.title);
-
-	return TAresult;
-};
-
-
+	return result;
+}
 
 // this function takes the results object from StackOverflow
 // and creates info about search results to be appended to DOM
@@ -108,26 +107,25 @@ var getUnanswered = function(tags) {
 };
 
 // takes a string to be searched for on StackOverflow, results are top answerers for that tag - search term
-var getTopAnswerers = function(iTags) {
+var getInspiration = function(tag) {
 	// the parameters we need to pass in our request to StackOverflow's API
-	var TArequest = {tagged: iTags,
-								site: 'stackoverflow',
-								order: 'desc',
-								sort: 'creation'};
-	var TAresult = $.ajax({
-		url: ("http://api.stackexchange.com/2.2/tags/" + iTags + "/top-answerers/all_time/"),
-		data: TArequest,
+	var request = {
+		site: 'stackoverflow'
+	};
+	
+	var result = $.ajax({
+		url: ("http://api.stackexchange.com/2.2/tags/" + tag + "/top-answerers/all_time/"),
+		data: request,
 		dataType: "jsonp",
-		type: "GET",
-		})
-	.done(function(TAresult){
-		var TAsearchResults = showSearchResults(TArequest.tagged, TAresult.items.length);
+		type: "GET"
+		}).done(function(result){
+		var searchResults = showSearchResults(tag, result.items.length);
 
-		$('.search-results').html(TAsearchResults);
+		$('.search-results').html(searchResults);
 
-		$.each(TAresult.items, function(i, item) {
-			var answerers = showAnswerers(item);
-			$('.results').append(answerers);
+		$.each(result.items, function(i, item) {
+			var inspiration = showInspiration(item);
+			$('.results').append(inspiration);
 		});
 	})
 	.fail(function(jqXHR, error, errorThrown){
